@@ -5,7 +5,7 @@ import app from '../src/app';
 import Hero from '../src/models/hero';
 
 const mongoConnect = require('../src/util/mongo-connect');
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/401-2018-notes';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/401-2018-heroes';
 
 
 describe('app', () => {
@@ -82,18 +82,51 @@ describe('app', () => {
           });
       });
     });
-    // it('can get /api/heroes/:id', ()=> {
-    //   var hero = new Hero({ name: 'hero', universe: 'with', power: 'an id'});
+    it('can get /api/heroes/:id', ()=> {
+      var hero = new Hero({ name: 'hero', universe: 'with', power: 'an id'});
 
-    //   return hero.save()
-    //     .then(saved => {
-    //       return request(app)
-    //         .get(`/api/heroes/${saved.id}`)
-    //         .expect(200)
-    //         .expect('Content-Type', 'application/json; charset=utf-8')
-    //         .expect(saved);
-    //     });
-    // });
+      return hero.save()
+        .then(saved => {
+          return request(app)
+            .get(`/api/heroes/${saved.id}`)
+            .expect(200)
+            .expect('Content-Type', 'application/json; charset=utf-8')
+            .expect(({ body }) => {
+              expect(body._id).toBe(body._id.toString());
+            });
+        });
+    });
+
+    it('returns 404 for GET /api/heroes/:id with invalid id', () => {
+      return request(app)
+        .get('/api/heroes/oops')
+        .expect(404);
+    });
+
+    it('returns 404 for GET /api/heroes/:id with valid but missing id', () => {
+      return request(app)
+        .get('/api/heroes/deadbeefdeadbeefdeadbeef')
+        .expect(404);
+    });
+
+    it('returns 400 for POST /api/heroes without body', () => {
+      return request(app)
+        .post('/api/heroes')
+        .set('Content-Type', 'application/json; charset=utf-8')
+        .send('this is not json')
+        .expect(400);
+    });
+
+    it('returns 400 for POST /api/heroes with empty body', () => {
+      return request(app)
+        .post('/api/heroes')
+        .send({})
+        .expect(400)
+        .expect(response => {
+          expect(response.body.message)
+            .toBe('hero validation failed: name: Path `name` is required.');
+        });
+    });
 
     it('can POST /api/heroes to create hero', () => {
       return request(app)

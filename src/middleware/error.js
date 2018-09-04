@@ -1,9 +1,21 @@
 'use strict';
 
-//this is error not 404
-const debug = require('debug')('app:error');
+const debug = require('debug')('app/middleware/error');
 
 export default (err, req, res, next) => {
+  if (err.name === 'CastError') {
+    res.sendStatus(404);
+    return;
+  }
+
+  if (err.name === 'ValidationError') {
+    res.statusCode = 400;
+    res.json({
+      message: err.message,
+    });
+    return;
+  }
+
   debug(err);
 
   if (req.headers['accept'] !== 'application/json') {
